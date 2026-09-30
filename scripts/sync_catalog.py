@@ -26,6 +26,7 @@ ENDPOINT_PATHS = (
     "/api/pricing",
 )
 IMAGE_PREFIXES = ("gpt-image-", "gemini-3.1-flash-image", "gemini-3.1-flash-lite-image")
+DEFAULT_EXCLUDED_MODELS = frozenset({"grok-4.5", "qwen3.8-27b", "deepseek-v4-flash", "hy3"})
 TEMPLATE_PREFIXES = (
     ("gpt-6.1-", "gpt-6-sol"),
     ("gpt-6-", "gpt-6-sol"),
@@ -61,6 +62,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--apply", action="store_true", help="Write the catalog after validation")
     parser.add_argument("--prune", action="store_true", help="Remove local models absent from the selected group")
     parser.add_argument("--include-image", action="store_true", help="Include image-billed models")
+    parser.add_argument(
+        "--exclude-model",
+        action="append",
+        default=list(DEFAULT_EXCLUDED_MODELS),
+        help="Exclude a model slug; repeatable (the configured default exclusions remain enabled)",
+    )
     parser.add_argument("--template-slug", action="append", default=[], help="Explicit fallback template slug; repeatable")
     parser.add_argument("--max-shrink-ratio", type=float, default=DEFAULT_MAX_SHRINK_RATIO)
     parser.add_argument("--timeout", type=float, default=20.0)
@@ -173,7 +180,13 @@ def iter_group_matches(data: dict[str, Any], group_name: str, platform_filter: s
                 yield platform, matches[0], section.get("supported_models", []) or []
 
 
-def select_models(data: dict[str, Any], group_name: str, platform_filter: str | None, include_image: bool) -> tuple[list[SourceModel], dict[str, Any]]:
+def select_models(
+    data: dict[str, Any],
+    group_name: str,
+    platform_filter: str | None,
+    include_image: bool,
+    excluded_models: set[str] | None = None,
+) -> tuple[list[SourceModel], dict[str, Any]]:
     matches = list(iter_group_matches(data, group_name, platform_filter))
     if not matches:
         suffix = f" on platform {platform_filter!r}" if platform_filter else ""
@@ -184,6 +197,7 @@ def select_models(data: dict[str, Any], group_name: str, platform_filter: str | 
     platform, group, supported_models = matches[0]
     selected: list[SourceModel] = []
     seen: set[str] = set()
+    excluded = {slug.lower() for slug in (excluded_models or set())}
     for item in supported_models:
         if isinstance(item, str):
             raw_slug, label, pricing = item, item, None
@@ -200,6 +214,8 @@ def select_models(data: dict[str, Any], group_name: str, platform_filter: str | 
         if key in seen:
             raise SyncError(f"group {group_name!r} contains duplicate model ID {slug!r}")
         seen.add(key)
+        if key in excluded:
+            continue
         image = is_image_model(slug, pricing)
         if image and not include_image:
             continue
@@ -335,7 +351,7 @@ def main(argv: list[str]) -> int:
     else:
         endpoint, payload = fetch_first_json(args.source_url, args.timeout)
     data = unwrap_payload(payload)
-    source_models, meta = select_models(data, args.group, args.platform, args.include_image)
+    source_models, meta = select_models(data, args.group, args.platform, args.include_image, set(args.exclude_model))
     merged, diff = merge_catalog(catalog, source_models, args.prune, args.template_slug, args.max_shrink_ratio)
     result = {"endpoint": endpoint, "catalog": str(catalog_path), "group": args.group, "platform": meta["platform"], "source_models": diff["source_models"], "added": diff["added"], "removed": diff["removed"], "unchanged": diff["unchanged"], "applied": False, "backup": None}
     if args.apply:

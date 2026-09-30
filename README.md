@@ -8,10 +8,12 @@
 - 默认只执行 dry-run；只有显式传入 `--apply` 才会写入本地目录。
 - 保留已有模型的完整配置；新模型只从同族模板克隆，不猜测上下文、工具或推理能力。
 - 默认排除图像计费模型。
+- 默认排除 `grok-4.5`、`qwen3.8-27b`、`deepseek-v4-flash` 和 `hy3`，避免被中转站重新发布后再次写入本地目录。
 - `--prune` 为显式删除开关，用于将本地目录镜像为指定分组。
 - 更新前自动生成时间戳备份，并使用原子替换写入。
 - 支持使用 `--payload` 导入已捕获的 JSON，便于测试或需要浏览器会话的中转站。
 - 安装时自动把 Codex 的 `config.toml` 指向模型目录，避免只安装 Skill 但 Codex 不加载自定义模型。
+- 首次安装时提供交互式向导：同步模型、选择默认模型、选择 US/JP 中转站、配置 API Key、OpenAI 登录认证和功能开关。
 
 ## 安装
 
@@ -48,6 +50,38 @@ model_catalog_json = "/absolute/path/to/.codex/model-catalogs/custom-models.json
 如果原来已有这项配置，安装脚本默认保留现有目录；只有未配置时才写入默认目录。使用 `--catalog` 或 `CODEX_MODEL_CATALOG` 时会显式切换目录，并先创建带时间戳的配置备份；其他配置内容保持不变。
 
 安装后重启 Codex，使 Skill 被重新发现并重新加载模型目录。
+
+### 首次安装向导
+
+首次安装会：
+
+1. 使用 xclis `GPT-稳定-STABLE / openai` 分组同步模型；
+2. 在同步后的模型列表中选择默认模型；
+3. 选择北美 `https://us.xclis.ai` 或亚洲 `https://jp.xclis.ai`；
+4. 以隐藏输入方式询问 API Key，直接回车则写入 `YOUR-API-KEY` 占位符；
+5. 询问是否启用 OpenAI 登录认证、生图和手机/App 远程控制相关配置；
+6. 展示脱敏摘要，确认后备份并更新 `config.toml`。
+
+API Key 不会出现在终端输出、命令行参数或模型目录中。若留空，向导会输出需要编辑的 `config.toml` 路径。
+
+已有 `xclis_ai` 配置时，重复运行安装脚本只同步模型并保留现有 provider 配置。需要重新选择时：
+
+```bash
+./install.sh --reconfigure
+```
+
+非交互安装示例：
+
+```bash
+CODEX_API_KEY='从安全环境变量注入' ./install.sh \
+  --non-interactive \
+  --model gpt-6.1-sol \
+  --provider-region us
+```
+
+也支持 `CODEX_DEFAULT_MODEL`、`CODEX_PROVIDER_REGION`、`CODEX_REQUIRES_OPENAI_AUTH`、`CODEX_IMAGE_GENERATION` 和 `CODEX_REMOTE_CONNECTIONS` 环境变量。
+
+`requires_openai_auth`、`features.image_generation` 和 `features.remote_connections` 属于版本相关配置。向导只在用户确认后写入；如启用 OpenAI 登录认证，配置完成后还需执行 `codex login`。
 
 ## 使用
 
@@ -92,6 +126,7 @@ model_catalog_json = "/absolute/path/to/.codex/model-catalogs/custom-models.json
 | `--apply` | 写入目录；省略时为 dry-run |
 | `--prune` | 删除分组中不存在的本地模型 |
 | `--include-image` | 包含图像计费模型 |
+| `--exclude-model` | 额外排除模型；可重复传入，默认排除四个已配置模型 |
 | `--template-slug` | 为新模型指定模板，可重复传入 |
 | `--json` | 输出机器可读 JSON |
 
@@ -127,7 +162,9 @@ cp /path/to/custom-models.json.bak-YYYYMMDD-HHMMSS-group \
 
 ```bash
 python3 scripts/test_sync_catalog.py
-python3 -m py_compile scripts/sync_catalog.py scripts/test_sync_catalog.py
+python3 scripts/test_configure_codex.py
+python3 scripts/test_setup_codex.py
+python3 -m py_compile scripts/*.py
 ```
 
 Skill 结构校验：
@@ -145,10 +182,15 @@ python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py .
 ├── references/
 │   ├── catalog-schema.md
 │   └── research-brief.md
+├── assets/
+│   └── catalog-template.json
 ├── scripts/
 │   ├── configure_codex.py
 │   ├── configure_codex.sh
 │   ├── test_configure_codex.py
+│   ├── setup_codex.py
+│   ├── setup_codex.sh
+│   ├── test_setup_codex.py
 │   ├── sync_catalog.py
 │   ├── sync_catalog.sh
 │   └── test_sync_catalog.py

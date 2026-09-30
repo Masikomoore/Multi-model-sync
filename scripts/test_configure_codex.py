@@ -52,6 +52,23 @@ class ConfigureCodexTests(unittest.TestCase):
             self.assertEqual(path.read_text(encoding="utf-8"), 'model = "new"\n')
             self.assertEqual(path.stat().st_mode & 0o777, 0o600)
 
+    def test_full_provider_and_feature_update_parses(self):
+        updated, changed = mod.update_codex_config(
+            "",
+            catalog=Path("/tmp/catalog.json"),
+            model="gpt-6.1-sol",
+            provider_base_url="https://us.xclis.ai",
+            api_key=None,
+            requires_openai_auth=True,
+            image_generation=True,
+            remote_connections=False,
+        )
+        self.assertTrue(changed)
+        mod.validate_toml(updated)
+        self.assertIn('base_url = "https://us.xclis.ai/v1"', updated)
+        self.assertIn("remote_connections = false", updated)
+        self.assertIn('experimental_bearer_token = "YOUR-API-KEY"', updated)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -55,6 +55,17 @@ class SyncCatalogTests(unittest.TestCase):
         self.assertEqual(meta["platform"], "openai")
         self.assertEqual([m.slug for m in models], ["gpt-6-sol"])
 
+    def test_default_exclusions_are_not_selected(self):
+        p = payload("gpt-6-sol", "qwen3.8-27b", "grok-4.5")
+        models, _ = mod.select_models(
+            mod.unwrap_payload(p),
+            "GPT-稳定-STABLE",
+            "openai",
+            False,
+            mod.DEFAULT_EXCLUDED_MODELS,
+        )
+        self.assertEqual([m.slug for m in models], ["gpt-6-sol"])
+
     def test_preserve_existing_and_add_from_template(self):
         result, diff = mod.merge_catalog(catalog(), [
             mod.SourceModel("gpt-6-sol", "GPT-6 Sol", False, "openai"),

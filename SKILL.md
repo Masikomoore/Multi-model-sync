@@ -1,6 +1,6 @@
 ---
 name: codex-model-sync
-description: Synchronize a local Codex custom model catalog from a named model group exposed by a relay station. Use when the user wants to collect a relay's current model list and update Codex without hand-editing JSON; not for changing provider credentials or editing upstream routing.
+description: Synchronize a local Codex custom model catalog from a named relay-station model group and optionally configure Codex to use that relay during first-run setup; not for editing upstream routing.
 metadata:
   short-description: Sync Codex models from a relay group
 ---
@@ -14,8 +14,11 @@ Use this skill when a user gives a relay-station URL (for example an xclis prici
 - Run `install.sh` to install the skill and configure `${CODEX_HOME:-$HOME/.codex}/config.toml`.
 - The installer sets the top-level `model_catalog_json` key when it is missing, preserves an existing catalog path by default, creates a timestamped config backup when changing an existing file, and leaves unrelated TOML content untouched.
 - Use `./install.sh --catalog /path/to/custom-models.json` or `CODEX_MODEL_CATALOG=/path/to/custom-models.json ./install.sh` when the catalog is not in the default directory.
-- Installing the skill does not invent model metadata or create a populated catalog. Run the sync command against an existing catalog, or provide a catalog with safe family templates first.
+- On a first install, the installer seeds a public catalog template, synchronizes the configured xclis group, and then offers an interactive provider setup. It does not put credentials in the catalog.
+- Re-running the installer keeps an existing `xclis_ai` provider configuration unless `--reconfigure` is supplied.
 - Restart Codex after installation or after applying a catalog update so the new configuration and models are loaded.
+
+The setup writes the requested third-party provider and feature settings only after confirmation. `requires_openai_auth`, `features.image_generation`, and `features.remote_connections` are version-sensitive settings; treat them as experimental and verify them against the installed Codex version.
 
 ## Default behavior
 
@@ -23,6 +26,7 @@ Use this skill when a user gives a relay-station URL (for example an xclis prici
 - Default is **dry-run**. Never write the catalog until the user explicitly asks to apply the reported diff or the command includes `--apply`.
 - Existing model objects are preserved. New model IDs are cloned only from an existing family template; do not synthesize context windows, tools, or reasoning levels from prices.
 - Image-billed rows are excluded unless `--include-image` is explicitly requested.
+- The configured exclusions `grok-4.5`, `qwen3.8-27b`, `deepseek-v4-flash`, and `hy3` stay excluded even if the relay publishes them again.
 - Removals are opt-in with `--prune`. Use `--apply --prune` only when the user wants the local catalog to mirror the selected group exactly.
 - Every apply creates a timestamped backup and atomically replaces the catalog. Codex loads the catalog at startup; tell the user to restart Codex after applying.
 - Never put API keys, cookies, bearer tokens, or page session data into the catalog or skill files. If a public endpoint is unavailable, stop and ask before using a login or browser fallback.
@@ -49,6 +53,15 @@ To make the local catalog an exact mirror of the selected group, add `--prune`. 
 
 For a previously captured public JSON response, use `--payload /path/to/payload.json`; this is useful for fixture tests or when the relay requires a separate browser capture.
 
+The first-run setup can also be invoked directly:
+
+```bash
+~/.codex/skills/codex-model-sync/scripts/setup_codex.sh \
+  --source-url https://xclis.ai/pricing \
+  --group 'GPT-稳定-STABLE' \
+  --platform openai
+```
+
 ## Required checks
 
 Before applying, verify:
@@ -60,7 +73,7 @@ Before applying, verify:
 5. The shrink guard has not rejected a suspiciously small source list.
 6. Every new model can use an existing family template. If not, stop and report the missing template instead of inventing metadata.
 
-For details about the public payload and catalog invariants, read [references/catalog-schema.md](references/catalog-schema.md). The research and design decision is recorded in [references/research-brief.md](references/research-brief.md).
+For details about the public payload and catalog invariants, read [references/catalog-schema.md](references/catalog-schema.md). The catalog design is recorded in [references/research-brief.md](references/research-brief.md), and the interactive setup decision is recorded in [references/interactive-setup-research.md](references/interactive-setup-research.md).
 
 ## Rollback
 
