@@ -51,6 +51,45 @@ model_catalog_json = "/absolute/path/to/.codex/model-catalogs/custom-models.json
 
 安装后重启 Codex，使 Skill 被重新发现并重新加载模型目录。
 
+### Windows 安装
+
+在 PowerShell 中执行：
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\install.ps1
+```
+
+Windows 默认使用 `$env:CODEX_HOME`；未设置时使用当前用户目录下的 `.codex`，通常是：
+
+```text
+C:\Users\<用户名>\.codex
+```
+
+也可以显式指定目录和模型：
+
+```powershell
+.\install.ps1 `
+  -Catalog "$env:USERPROFILE\.codex\model-catalogs\custom-models.json" `
+  -ProviderRegion us `
+  -Model gpt-6.1-sol
+```
+
+非交互安装：
+
+```powershell
+$env:CODEX_API_KEY = "从安全环境变量注入"
+.\install.ps1 -NonInteractive -ProviderRegion us -Model gpt-6.1-sol
+```
+
+如果 Python 启动器没有加入 PATH，可设置：
+
+```powershell
+$env:PYTHON = "C:\Path\To\python.exe"
+```
+
+PowerShell 入口只负责复制文件、定位 Python 和转发参数，实际配置逻辑仍由 Python 脚本执行。也可以直接运行 `scripts\setup_codex.ps1`、`scripts\sync_catalog.ps1` 或 `scripts\configure_codex.ps1`。
+
 ### 首次安装向导
 
 首次安装会：
@@ -164,6 +203,7 @@ cp /path/to/custom-models.json.bak-YYYYMMDD-HHMMSS-group \
 python3 scripts/test_sync_catalog.py
 python3 scripts/test_configure_codex.py
 python3 scripts/test_setup_codex.py
+python3 scripts/test_windows_entrypoints.py
 python3 -m py_compile scripts/*.py
 ```
 
@@ -187,14 +227,19 @@ python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py .
 ├── scripts/
 │   ├── configure_codex.py
 │   ├── configure_codex.sh
+│   ├── configure_codex.ps1
 │   ├── test_configure_codex.py
 │   ├── setup_codex.py
 │   ├── setup_codex.sh
+│   ├── setup_codex.ps1
+│   ├── sync_catalog.ps1
 │   ├── test_setup_codex.py
+│   ├── test_windows_entrypoints.py
 │   ├── sync_catalog.py
 │   ├── sync_catalog.sh
 │   └── test_sync_catalog.py
 ├── install.sh
+├── install.ps1
 ├── LICENSE
 └── README.md
 ```

@@ -22,7 +22,8 @@ ASSIGNMENT = re.compile(r"^\s*([A-Za-z0-9_.-]+)\s*=")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    default_home = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser()
+    raw_home = os.path.expandvars(os.environ.get("CODEX_HOME", "~/.codex"))
+    default_home = Path(raw_home).expanduser()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--codex-home", default=str(default_home))
     parser.add_argument("--config", help="Codex config.toml path")

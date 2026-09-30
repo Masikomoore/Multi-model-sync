@@ -24,7 +24,8 @@ REGIONS = {
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    home = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser()
+    raw_home = os.path.expandvars(os.environ.get("CODEX_HOME", "~/.codex"))
+    home = Path(raw_home).expanduser()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--codex-home", default=str(home))
     parser.add_argument("--config")

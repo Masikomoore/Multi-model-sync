@@ -30,6 +30,7 @@ The installer is idempotent: an existing `xclis_ai` configuration is preserved u
 - Back up an existing `config.toml` before modification.
 - Do not modify `config.toml` when model synchronization fails or the user cancels.
 - Keep the source URL, group, platform, model, provider URL, and feature choices available as non-interactive flags/environment variables.
+- Use a PowerShell wrapper on Windows, but keep Python as the single implementation for path handling, TOML updates, backups, and atomic replacement.
 
 ## Acceptance criteria
 
@@ -40,6 +41,7 @@ The installer is idempotent: an existing `xclis_ai` configuration is preserved u
 - The generated TOML parses successfully.
 - Existing xclis configuration is preserved on repeat install.
 - Unit tests cover catalog selection, provider selection, config mutation, and setup behavior.
+- Windows acceptance includes PowerShell entrypoints, `%USERPROFILE%\.codex` fallback, and forwarding to the shared Python implementation.
 
 ## Research sources
 
@@ -48,3 +50,4 @@ The installer is idempotent: an existing `xclis_ai` configuration is preserved u
 - Cargo configuration and command documentation
 - Python `tomllib` documentation
 - TOMLKit documentation and repository
+- Microsoft PowerShell command and secure-input documentation

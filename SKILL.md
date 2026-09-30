@@ -11,11 +11,12 @@ Use this skill when a user gives a relay-station URL (for example an xclis prici
 
 ## Installation and Codex configuration
 
-- Run `install.sh` to install the skill and configure `${CODEX_HOME:-$HOME/.codex}/config.toml`.
+- Run `install.sh` on macOS/Linux or `install.ps1` in PowerShell on Windows to install the skill and configure `${CODEX_HOME:-$HOME/.codex}/config.toml`.
 - The installer sets the top-level `model_catalog_json` key when it is missing, preserves an existing catalog path by default, creates a timestamped config backup when changing an existing file, and leaves unrelated TOML content untouched.
 - Use `./install.sh --catalog /path/to/custom-models.json` or `CODEX_MODEL_CATALOG=/path/to/custom-models.json ./install.sh` when the catalog is not in the default directory.
 - On a first install, the installer seeds a public catalog template, synchronizes the configured xclis group, and then offers an interactive provider setup. It does not put credentials in the catalog.
 - Re-running the installer keeps an existing `xclis_ai` provider configuration unless `--reconfigure` is supplied.
+- On Windows, the PowerShell entrypoint defaults to `$env:CODEX_HOME` and then `$HOME\.codex`; it invokes the same Python implementation instead of maintaining a separate configuration path.
 - Restart Codex after installation or after applying a catalog update so the new configuration and models are loaded.
 
 The setup writes the requested third-party provider and feature settings only after confirmation. `requires_openai_auth`, `features.image_generation`, and `features.remote_connections` are version-sensitive settings; treat them as experimental and verify them against the installed Codex version.
@@ -59,6 +60,15 @@ The first-run setup can also be invoked directly:
 ~/.codex/skills/codex-model-sync/scripts/setup_codex.sh \
   --source-url https://xclis.ai/pricing \
   --group 'GPT-稳定-STABLE' \
+  --platform openai
+```
+
+On Windows PowerShell, use:
+
+```powershell
+.\scripts\setup_codex.ps1 `
+  --source-url https://xclis.ai/pricing `
+  --group 'GPT-稳定-STABLE' `
   --platform openai
 ```
 
