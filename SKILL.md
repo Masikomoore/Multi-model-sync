@@ -1,20 +1,20 @@
 ---
 name: codex-model-sync
-description: Synchronize a local Codex custom model catalog from a named relay-station model group and optionally configure Codex to use that relay during first-run setup; not for editing upstream routing.
+description: Help users quickly connect Codex to a third-party relay, configure a custom model catalog and default model, and keep the catalog synchronized; xclis is the bundled example adapter.
 metadata:
-  short-description: Sync Codex models from a relay group
+  short-description: Connect Codex to a relay and sync custom models
 ---
 
 # Codex Model Sync
 
-Use this skill when a user gives a relay-station URL (for example an xclis pricing site), a product/platform or group name, and asks to install, refresh, or synchronize the local Codex custom model list.
+Use this skill when a user wants to connect Codex to a third-party relay, configure a custom model catalog, select a default model, or refresh the local model list from a relay group. The bundled xclis integration is the reference implementation; other relays can be connected by changing the source URL, group, platform, payload, or adapter logic.
 
 ## Installation and Codex configuration
 
 - Run `install.sh` on macOS/Linux or `install.ps1` in PowerShell on Windows to install the skill and configure `${CODEX_HOME:-$HOME/.codex}/config.toml`.
 - The installer sets the top-level `model_catalog_json` key when it is missing, preserves an existing catalog path by default, creates a timestamped config backup when changing an existing file, and leaves unrelated TOML content untouched.
 - Use `./install.sh --catalog /path/to/custom-models.json` or `CODEX_MODEL_CATALOG=/path/to/custom-models.json ./install.sh` when the catalog is not in the default directory.
-- On a first install, the installer seeds a public catalog template, synchronizes the configured xclis group, and then offers an interactive provider setup. It does not put credentials in the catalog.
+- On a first install, the installer seeds a public catalog template, synchronizes the configured relay group, and then offers an interactive provider setup. The default example is xclis; credentials never go into the catalog.
 - Re-running the installer keeps an existing `xclis_ai` provider configuration unless `--reconfigure` is supplied.
 - On Windows, the PowerShell entrypoint defaults to `$env:CODEX_HOME` and then `$HOME\.codex`; it invokes the same Python implementation instead of maintaining a separate configuration path.
 - Restart Codex after installation or after applying a catalog update so the new configuration and models are loaded.
@@ -23,7 +23,7 @@ The setup writes the requested third-party provider and feature settings only af
 
 ## Default behavior
 
-- Prefer the relay's public JSON inventory over scraping a rendered pricing page. The bundled script probes `/api/sub2api/api/v1/public/pricing`, `/api/v1/public/pricing`, and `/api/pricing`.
+- Prefer the relay's public JSON inventory over scraping a rendered pricing page. The bundled xclis example probes `/api/sub2api/api/v1/public/pricing`, `/api/v1/public/pricing`, and `/api/pricing`; other sites may provide a different endpoint or require an adapter.
 - Default is **dry-run**. Never write the catalog until the user explicitly asks to apply the reported diff or the command includes `--apply`.
 - Existing model objects are preserved. New model IDs are cloned only from an existing family template; do not synthesize context windows, tools, or reasoning levels from prices.
 - Image-billed rows are excluded unless `--include-image` is explicitly requested.
