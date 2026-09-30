@@ -9,6 +9,14 @@ metadata:
 
 Use this skill when a user gives a relay-station URL (for example an xclis pricing site), a product/platform or group name, and asks to install, refresh, or synchronize the local Codex custom model list.
 
+## Installation and Codex configuration
+
+- Run `install.sh` to install the skill and configure `${CODEX_HOME:-$HOME/.codex}/config.toml`.
+- The installer sets the top-level `model_catalog_json` key when it is missing, preserves an existing catalog path by default, creates a timestamped config backup when changing an existing file, and leaves unrelated TOML content untouched.
+- Use `./install.sh --catalog /path/to/custom-models.json` or `CODEX_MODEL_CATALOG=/path/to/custom-models.json ./install.sh` when the catalog is not in the default directory.
+- Installing the skill does not invent model metadata or create a populated catalog. Run the sync command against an existing catalog, or provide a catalog with safe family templates first.
+- Restart Codex after installation or after applying a catalog update so the new configuration and models are loaded.
+
 ## Default behavior
 
 - Prefer the relay's public JSON inventory over scraping a rendered pricing page. The bundled script probes `/api/sub2api/api/v1/public/pricing`, `/api/v1/public/pricing`, and `/api/pricing`.
@@ -28,7 +36,7 @@ Use the bundled wrapper; it uses Python's standard library to retrieve public JS
   --source-url https://xclis.ai/pricing \
   --group 'GPT-稳定-STABLE' \
   --platform openai \
-  --catalog /Users/mixi/.codex/model-catalogs/custom-models.json
+  --catalog "${CODEX_HOME:-$HOME/.codex}/model-catalogs/custom-models.json"
 ```
 
 The command prints source endpoint, matched group, model IDs, and added/removed/unchanged sets without writing. To apply additions and preserve local-only models:

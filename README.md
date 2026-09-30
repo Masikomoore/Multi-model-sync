@@ -11,6 +11,7 @@
 - `--prune` 为显式删除开关，用于将本地目录镜像为指定分组。
 - 更新前自动生成时间戳备份，并使用原子替换写入。
 - 支持使用 `--payload` 导入已捕获的 JSON，便于测试或需要浏览器会话的中转站。
+- 安装时自动把 Codex 的 `config.toml` 指向模型目录，避免只安装 Skill 但 Codex 不加载自定义模型。
 
 ## 安装
 
@@ -32,7 +33,21 @@
 CODEX_HOME=/custom/codex ./install.sh
 ```
 
-安装后重启 Codex，使 Skill 被重新发现。
+如果要使用已有的其他目录：
+
+```bash
+./install.sh --catalog /path/to/custom-models.json
+```
+
+安装脚本会创建模型目录，并在 `${CODEX_HOME}/config.toml` 中写入：
+
+```toml
+model_catalog_json = "/absolute/path/to/.codex/model-catalogs/custom-models.json"
+```
+
+如果原来已有这项配置，安装脚本默认保留现有目录；只有未配置时才写入默认目录。使用 `--catalog` 或 `CODEX_MODEL_CATALOG` 时会显式切换目录，并先创建带时间戳的配置备份；其他配置内容保持不变。
+
+安装后重启 Codex，使 Skill 被重新发现并重新加载模型目录。
 
 ## 使用
 
@@ -43,7 +58,7 @@ CODEX_HOME=/custom/codex ./install.sh
   --source-url https://xclis.ai/pricing \
   --group 'GPT-稳定-STABLE' \
   --platform openai \
-  --catalog ~/.codex/model-catalogs/custom-models.json
+  --catalog "${CODEX_HOME:-$HOME/.codex}/model-catalogs/custom-models.json"
 ```
 
 确认差异后应用：
@@ -53,7 +68,7 @@ CODEX_HOME=/custom/codex ./install.sh
   --source-url https://xclis.ai/pricing \
   --group 'GPT-稳定-STABLE' \
   --platform openai \
-  --catalog ~/.codex/model-catalogs/custom-models.json \
+  --catalog "${CODEX_HOME:-$HOME/.codex}/model-catalogs/custom-models.json" \
   --apply
 ```
 
@@ -79,6 +94,12 @@ CODEX_HOME=/custom/codex ./install.sh
 | `--include-image` | 包含图像计费模型 |
 | `--template-slug` | 为新模型指定模板，可重复传入 |
 | `--json` | 输出机器可读 JSON |
+
+也可以只重新配置 Codex，而不复制 Skill：
+
+```bash
+~/.codex/skills/codex-model-sync/scripts/configure_codex.sh
+```
 
 ## 安全行为
 
@@ -125,6 +146,9 @@ python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py .
 │   ├── catalog-schema.md
 │   └── research-brief.md
 ├── scripts/
+│   ├── configure_codex.py
+│   ├── configure_codex.sh
+│   ├── test_configure_codex.py
 │   ├── sync_catalog.py
 │   ├── sync_catalog.sh
 │   └── test_sync_catalog.py

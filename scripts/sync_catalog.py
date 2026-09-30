@@ -17,7 +17,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin, urlparse
 from urllib.request import Request, urlopen
 
-DEFAULT_CATALOG = os.path.expanduser("~/.codex/model-catalogs/custom-models.json")
+CODEX_HOME = os.path.expanduser(os.environ.get("CODEX_HOME", "~/.codex"))
+DEFAULT_CATALOG = os.path.join(CODEX_HOME, "model-catalogs", "custom-models.json")
 DEFAULT_MAX_SHRINK_RATIO = 0.5
 ENDPOINT_PATHS = (
     "/api/sub2api/api/v1/public/pricing",
