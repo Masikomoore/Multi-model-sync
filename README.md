@@ -1,4 +1,4 @@
-# Codex 第三方中转站接入与模型同步
+# 一个方便的第三方中转站综合模型接入codex的工具
 
 一个可安装到 Codex 的 Skill，帮助用户快速接入第三方 AI 中转站，自动配置 Codex 的 provider、自定义模型目录和默认模型，并持续同步更新中转站模型变化，无需手工编辑 `config.toml` 或模型 JSON。
 
@@ -20,7 +20,6 @@
 - 默认只执行 dry-run；只有显式传入 `--apply` 才会写入本地目录。
 - 保留已有模型的完整配置；新模型只从同族模板克隆，不猜测上下文、工具或推理能力。
 - 默认排除图像计费模型。
-- 默认排除 `grok-4.5`、`qwen3.8-27b`、`deepseek-v4-flash` 和 `hy3`，避免被中转站重新发布后再次写入本地目录。
 - `--prune` 为显式删除开关，用于将本地目录镜像为指定分组。
 - 更新前自动生成时间戳备份，并使用原子替换写入。
 - 支持使用 `--payload` 导入已捕获的 JSON，便于测试或需要浏览器会话的中转站。
@@ -135,7 +134,7 @@ CODEX_API_KEY='从安全环境变量注入' ./install.sh \
 
 `requires_openai_auth`、`features.image_generation` 和 `features.remote_connections` 属于版本相关配置。向导只在用户确认后写入；如启用 OpenAI 登录认证，配置完成后还需执行 `codex login`。
 
-## 在 Codex 里触发同步
+## 模型同步更新指令
 
 在 Codex 对话里用下面任一方式刷新已安装的 xclis 模型目录：
 
