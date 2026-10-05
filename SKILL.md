@@ -1,13 +1,24 @@
 ---
-name: codex-model-sync
-description: Help users quickly connect Codex to a third-party relay, configure a custom model catalog and default model, and keep the catalog synchronized; xclis is the bundled example adapter.
+name: xclis-sync
+description: "Sync the local xclis Codex model catalog when the user says /xclis-sync, $xclis-sync, 同步xclis模型, 更新xclis模型, or 升级xclis模型. Also use when connecting Codex to a third-party relay, choosing a default model, or refreshing that relay's custom model catalog. The bundled example is xclis GPT-稳定-STABLE."
 metadata:
-  short-description: Connect Codex to a relay and sync custom models
+  short-description: Sync xclis models into Codex
 ---
 
 # Codex Model Sync
 
 Use this skill when a user wants to connect Codex to a third-party relay, configure a custom model catalog, select a default model, or refresh the local model list from a relay group. The bundled xclis integration is the reference implementation; other relays can be connected by changing the source URL, group, platform, payload, or adapter logic.
+
+## xclis model sync command
+
+Codex invokes this skill explicitly as `$xclis-sync`. A bare `/xclis-sync` is not a Codex slash command; the CLI rejects unknown `/` commands before the skill can run. The same sync also runs when the user says any of these phrases:
+
+- `/xclis-sync`
+- 同步xclis模型
+- 更新xclis模型
+- 升级xclis模型
+
+For those requests, refresh the installed xclis catalog. Reuse the saved source URL, group, platform, and catalog path. If none are saved, use `https://xclis.ai/pricing`, group `GPT-稳定-STABLE`, and platform `openai`. Show a dry-run first. Write the catalog only after the user asks to apply. After an apply, tell the user to restart Codex. Do not re-run provider setup unless the user asks to reconfigure.
 
 ## Installation and Codex configuration
 

@@ -135,6 +135,21 @@ CODEX_API_KEY='从安全环境变量注入' ./install.sh \
 
 `requires_openai_auth`、`features.image_generation` 和 `features.remote_connections` 属于版本相关配置。向导只在用户确认后写入；如启用 OpenAI 登录认证，配置完成后还需执行 `codex login`。
 
+## 在 Codex 里触发同步
+
+在 Codex 对话里用下面任一方式刷新已安装的 xclis 模型目录：
+
+- `$xclis-sync`
+- 同步xclis模型
+- 更新xclis模型
+- 升级xclis模型
+
+`$xclis-sync` 是 Codex 的显式技能调用。技能名来自 `SKILL.md` 的 `name`。三条中文会按技能描述隐式触发同一套同步：先 dry-run，只有用户要求应用时才写入目录，然后需要重启 Codex。
+
+当前 Codex CLI 没有用户自定义斜杠命令。单独输入 `/xclis-sync` 会得到 `Unrecognized command '/xclis-sync'`，请求到不了这个技能。把这句话写进普通消息里时，描述匹配仍然可以触发同步。
+
+安装目录保持 `~/.codex/skills/codex-model-sync`。修改技能说明后重启 Codex，新的名称和触发词才会被重新加载。
+
 ## 使用
 
 先执行 dry-run：

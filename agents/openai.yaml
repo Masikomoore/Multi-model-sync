@@ -1,3 +1,4 @@
 interface:
-  display_name: "Codex Relay Setup & Model Sync"
-  short_description: "Connect Codex to relays and sync custom models"
+  display_name: "Xclis Model Sync"
+  short_description: "Sync xclis models into Codex"
+  default_prompt: "Use $xclis-sync to refresh the local xclis model catalog."
