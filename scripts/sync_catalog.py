@@ -37,6 +37,7 @@ TEMPLATE_PREFIXES = (
     ("gemini-", "gemini-3.8-flash"),
     ("kimi-", "kimi-k3"),
     ("deepseek-", "deepseek-v4.1-flash"),
+    ("glm-", "glm-5.3"),
 )
 
 
@@ -248,18 +249,38 @@ def is_image_slug(slug: str) -> bool:
     return slug.lower().startswith(IMAGE_PREFIXES)
 
 
+def bundled_templates() -> dict[str, dict[str, Any]]:
+    path = Path(__file__).resolve().parent.parent / "assets" / "catalog-template.json"
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    _, by_slug = existing_models(data)
+    return by_slug
+
+
 def find_template(slug: str, by_slug: dict[str, dict[str, Any]], explicit_templates: list[str]) -> tuple[str, dict[str, Any]]:
+    bundled = bundled_templates()
     for candidate in explicit_templates:
-        entry = by_slug.get(candidate.lower())
+        entry = by_slug.get(candidate.lower()) or bundled.get(candidate.lower())
         if entry:
             return candidate, entry
         raise SyncError(f"explicit template slug {candidate!r} is not in the catalog")
+    missing_family = ""
     for prefix, template_slug in TEMPLATE_PREFIXES:
         if slug.lower().startswith(prefix):
             entry = by_slug.get(template_slug.lower())
             if entry:
                 return template_slug, entry
-            raise SyncError(f"new model {slug!r} needs template {template_slug!r}; pass --template-slug")
+            missing_family = template_slug
+            break
+    documented = bundled.get(slug.lower())
+    if documented is not None:
+        return slug, documented
+    if missing_family:
+        entry = bundled.get(missing_family.lower())
+        if entry:
+            return missing_family, entry
+        raise SyncError(f"new model {slug!r} needs template {missing_family!r}; pass --template-slug")
     raise SyncError(f"new model {slug!r} has no safe family template; pass --template-slug")
 
 

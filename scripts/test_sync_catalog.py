@@ -77,6 +77,28 @@ class SyncCatalogTests(unittest.TestCase):
         self.assertEqual(result["models"][1]["context_window"], 272000)
         self.assertEqual(result["models"][2]["slug"], "old-model")
 
+    def test_new_glm_uses_bundled_template(self):
+        result, diff = mod.merge_catalog(catalog(), [
+            mod.SourceModel("gpt-6-sol", "GPT-6 Sol", False, "openai"),
+            mod.SourceModel("glm-5.3", "GLM-5.3", False, "openai"),
+        ], False, [], 0.5)
+        self.assertEqual(diff["added"], ["glm-5.3 (template: glm-5.3)"])
+        added = result["models"][1]
+        self.assertEqual(added["context_window"], 1048576)
+        self.assertEqual(added["max_context_window"], 1048576)
+        self.assertEqual(added["default_reasoning_level"], "max")
+        self.assertEqual(
+            [level["effort"] for level in added["supported_reasoning_levels"]],
+            ["low", "high", "max"],
+        )
+        self.assertEqual(added["input_modalities"], ["text"])
+
+    def test_unknown_family_still_fails(self):
+        with self.assertRaises(mod.SyncError):
+            mod.merge_catalog(catalog(), [
+                mod.SourceModel("brand-new-model", "Brand New", False, "openai"),
+            ], False, [], 0.5)
+
     def test_prune_removes_local_only_model(self):
         result, diff = mod.merge_catalog(catalog(), [
             mod.SourceModel("gpt-6-sol", "GPT-6 Sol", False, "openai"),
