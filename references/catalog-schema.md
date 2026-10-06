@@ -48,6 +48,7 @@ The official Codex catalog schema is not fully documented. Therefore price rows 
 ## Safety invariants
 
 - Reject zero models, duplicate IDs, duplicate catalog slugs, invalid JSON, ambiguous groups, and missing templates.
-- With `--prune`, reject a source list that shrinks by more than 50% of the current non-image catalog unless the caller raises `--max-shrink-ratio` deliberately.
+- A normal sync sets `visibility` to `hide` for non-image models missing from the selected group, and sets it back to `list` when they return. `--prune` deletes those entries instead.
+- Reject a source list that shrinks by more than 50% of the current non-image catalog unless the caller raises `--max-shrink-ratio` deliberately. This guard applies to both hiding and pruning.
 - Apply is a backup + same-directory temporary write + atomic rename.
 - The catalog is read at Codex startup. A successful file write is not a hot reload.

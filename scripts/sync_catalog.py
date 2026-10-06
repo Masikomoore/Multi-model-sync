@@ -289,15 +289,20 @@ def merge_catalog(catalog: dict[str, Any], source_models: list[SourceModel], pru
     source_slugs = [m.slug for m in source_models]
     source_keys = {slug.lower() for slug in source_slugs}
     current_chat = [entry for entry in current_models if not is_image_slug(str(entry.get("slug", "")))]
-    if prune and len(source_slugs) < max(1, int(len(current_chat) * (1 - max_shrink_ratio))):
+    if len(source_slugs) < max(1, int(len(current_chat) * (1 - max_shrink_ratio))):
         raise SyncError(f"source list shrank from {len(current_chat)} to {len(source_slugs)} models; use a larger --max-shrink-ratio only if intentional")
 
     added: list[str] = []
+    restored: list[str] = []
     new_models: list[dict[str, Any]] = []
     next_priority = max((int(entry.get("priority", 0)) for entry in current_models if isinstance(entry.get("priority", 0), int)), default=-1) + 1
     for source in source_models:
         existing = by_slug.get(source.slug.lower())
         if existing is not None:
+            if not prune and existing.get("visibility") == "hide":
+                existing = copy.deepcopy(existing)
+                existing["visibility"] = "list"
+                restored.append(source.slug)
             new_models.append(existing)
             continue
         template_slug, template = find_template(source.slug, by_slug, explicit_templates)
@@ -309,16 +314,29 @@ def merge_catalog(catalog: dict[str, Any], source_models: list[SourceModel], pru
         new_models.append(entry)
         added.append(f"{source.slug} (template: {template_slug})")
 
-    removed = [str(entry.get("slug")) for entry in current_models if str(entry.get("slug", "")).lower() not in source_keys] if prune else []
-    unchanged = [slug for slug in source_slugs if slug.lower() in by_slug]
+    hidden: list[str] = []
     if prune:
+        removed = [str(entry.get("slug")) for entry in current_models if str(entry.get("slug", "")).lower() not in source_keys]
         result_models = new_models
     else:
-        local_only = [entry for entry in current_models if str(entry.get("slug", "")).lower() not in source_keys]
+        removed = []
+        local_only: list[dict[str, Any]] = []
+        for entry in current_models:
+            if str(entry.get("slug", "")).lower() in source_keys:
+                continue
+            if is_image_slug(str(entry.get("slug", ""))):
+                local_only.append(entry)
+                continue
+            if entry.get("visibility") != "hide":
+                entry = copy.deepcopy(entry)
+                entry["visibility"] = "hide"
+            hidden.append(str(entry.get("slug")))
+            local_only.append(entry)
         result_models = new_models + local_only
+    unchanged = [slug for slug in source_slugs if slug.lower() in by_slug and slug not in restored]
     result = copy.deepcopy(catalog)
     result["models"] = result_models
-    diff = {"added": added, "removed": removed, "unchanged": unchanged, "source_models": source_slugs, "result_count": len(result_models)}
+    diff = {"added": added, "removed": removed, "hidden": hidden, "restored": restored, "unchanged": unchanged, "source_models": source_slugs, "result_count": len(result_models)}
     return result, diff
 
 
@@ -342,7 +360,7 @@ def render(result: dict[str, Any], as_json: bool) -> None:
     print(f"Source: {result['endpoint']}")
     print(f"Group: {result['group']} ({result['platform']})")
     print(f"Models: {len(result['source_models'])}")
-    for label in ("added", "removed", "unchanged"):
+    for label in ("added", "removed", "hidden", "restored", "unchanged"):
         values = result[label]
         print(f"{label}: {len(values)}")
         for value in values:
@@ -374,7 +392,7 @@ def main(argv: list[str]) -> int:
     data = unwrap_payload(payload)
     source_models, meta = select_models(data, args.group, args.platform, args.include_image, set(args.exclude_model))
     merged, diff = merge_catalog(catalog, source_models, args.prune, args.template_slug, args.max_shrink_ratio)
-    result = {"endpoint": endpoint, "catalog": str(catalog_path), "group": args.group, "platform": meta["platform"], "source_models": diff["source_models"], "added": diff["added"], "removed": diff["removed"], "unchanged": diff["unchanged"], "applied": False, "backup": None}
+    result = {"endpoint": endpoint, "catalog": str(catalog_path), "group": args.group, "platform": meta["platform"], "source_models": diff["source_models"], "added": diff["added"], "removed": diff["removed"], "hidden": diff["hidden"], "restored": diff["restored"], "unchanged": diff["unchanged"], "applied": False, "backup": None}
     if args.apply:
         backup = write_atomic(catalog_path, merged, args.group)
         result["applied"] = True

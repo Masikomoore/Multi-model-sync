@@ -76,6 +76,9 @@ class SyncCatalogTests(unittest.TestCase):
         self.assertEqual(result["models"][1]["slug"], "gpt-6.1-sol")
         self.assertEqual(result["models"][1]["context_window"], 272000)
         self.assertEqual(result["models"][2]["slug"], "old-model")
+        self.assertEqual(result["models"][2]["visibility"], "hide")
+        self.assertEqual(diff["hidden"], ["old-model"])
+        self.assertEqual(diff["removed"], [])
 
     def test_new_glm_uses_bundled_template(self):
         result, diff = mod.merge_catalog(catalog(), [
@@ -97,6 +100,40 @@ class SyncCatalogTests(unittest.TestCase):
         with self.assertRaises(mod.SyncError):
             mod.merge_catalog(catalog(), [
                 mod.SourceModel("brand-new-model", "Brand New", False, "openai"),
+            ], False, [], 0.5)
+
+    def test_relisted_model_is_shown_again(self):
+        state = catalog()
+        state["models"][1]["visibility"] = "hide"
+        result, diff = mod.merge_catalog(state, [
+            mod.SourceModel("gpt-6-sol", "GPT-6 Sol", False, "openai"),
+            mod.SourceModel("old-model", "Old Model", False, "openai"),
+        ], False, [], 0.5)
+        self.assertEqual(diff["restored"], ["old-model"])
+        self.assertEqual(diff["hidden"], [])
+        restored = next(entry for entry in result["models"] if entry["slug"] == "old-model")
+        self.assertEqual(restored["visibility"], "list")
+
+    def test_image_model_is_not_hidden_by_chat_sync(self):
+        state = catalog()
+        state["models"].append({"slug": "gpt-image-2", "display_name": "Image", "visibility": "list", "priority": 9})
+        result, diff = mod.merge_catalog(state, [
+            mod.SourceModel("gpt-6-sol", "GPT-6 Sol", False, "openai"),
+            mod.SourceModel("old-model", "Old Model", False, "openai"),
+        ], False, [], 0.5)
+        image = next(entry for entry in result["models"] if entry["slug"] == "gpt-image-2")
+        self.assertEqual(image["visibility"], "list")
+        self.assertNotIn("gpt-image-2", diff["hidden"])
+
+    def test_suspicious_shrink_is_rejected(self):
+        state = catalog()
+        state["models"].extend([
+            {"slug": "third-model", "display_name": "Third", "priority": 3},
+            {"slug": "fourth-model", "display_name": "Fourth", "priority": 4},
+        ])
+        with self.assertRaises(mod.SyncError):
+            mod.merge_catalog(state, [
+                mod.SourceModel("gpt-6-sol", "GPT-6 Sol", False, "openai"),
             ], False, [], 0.5)
 
     def test_prune_removes_local_only_model(self):

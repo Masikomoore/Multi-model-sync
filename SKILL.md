@@ -39,7 +39,7 @@ The setup writes the requested third-party provider and feature settings only af
 - Existing model objects are preserved. New model IDs are cloned only from an existing family template; do not synthesize context windows, tools, or reasoning levels from prices.
 - Image-billed rows are excluded unless `--include-image` is explicitly requested.
 - The configured exclusions `grok-4.5`, `qwen3.8-27b`, `deepseek-v4-flash`, and `hy3` stay excluded even if the relay publishes them again.
-- Removals are opt-in with `--prune`. Use `--apply --prune` only when the user wants the local catalog to mirror the selected group exactly.
+- Models absent from the selected group are hidden with `visibility: hide` on a normal sync. They stay in the file and return to `visibility: list` if the group lists them again. Use `--prune` only when the user wants those entries deleted. Image-billed slugs are left unchanged by this hide step.
 - Every apply creates a timestamped backup and atomically replaces the catalog. Codex loads the catalog at startup; tell the user to restart Codex after applying.
 - Never put API keys, cookies, bearer tokens, or page session data into the catalog or skill files. If a public endpoint is unavailable, stop and ask before using a login or browser fallback.
 
@@ -55,7 +55,7 @@ Use the bundled wrapper; it uses Python's standard library to retrieve public JS
   --catalog "${CODEX_HOME:-$HOME/.codex}/model-catalogs/custom-models.json"
 ```
 
-The command prints source endpoint, matched group, model IDs, and added/removed/unchanged sets without writing. To apply additions and preserve local-only models:
+The command prints source endpoint, matched group, model IDs, and added, removed, hidden, restored, and unchanged sets without writing. To apply additions and hide models the group no longer lists:
 
 ```bash
 .../sync_catalog.sh --source-url ... --group ... --catalog ... --apply
